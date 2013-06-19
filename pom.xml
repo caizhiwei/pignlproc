@@ -108,11 +108,17 @@
       <version>4.2</version>
       <scope>test</scope>
     </dependency>
-      <dependency>
+    <dependency>
           <groupId>org.dbpedia.spotlight</groupId>
           <version>0.6</version>
           <artifactId>core</artifactId>
-      </dependency>
+    </dependency>
+
+    <dependency>
+          <groupId>edu.umass.cs.iesl.wikilink</groupId>
+          <artifactId>wikilink</artifactId>
+          <version>0.1-SNAPSHOT</version>
+    </dependency>
 
   </dependencies>
 
@@ -162,6 +168,18 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
+
+    <repository>
+          <id>iesl.cs.umass.edu</id>
+          <name>IESL release repository</name>
+          <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/</url>
+    </repository>
+    <repository>
+          <id>snapshot.iesl.cs.umass.edu</id>
+          <name>IESL snapshot repository</name>
+          <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/</url>
+    </repository>
+
   </repositories>
 
 </project>
