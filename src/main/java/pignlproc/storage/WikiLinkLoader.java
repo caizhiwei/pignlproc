@@ -1,5 +1,6 @@
 package pignlproc.storage;
 
+import edu.umass.cs.iesl.wikilink.expanded.data.Context;
 import edu.umass.cs.iesl.wikilink.expanded.data.Mention;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
@@ -91,8 +92,11 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
             Iterator<Mention> iter = mentions.iterator();
             while(iter.hasNext()) {
                 Mention mention = iter.next();
-                mentionBag.add(tupleFactory.newTupleNoCopy(Arrays.asList(mention.anchorText(), mention.wikiUrl(),
-                        mention.context().toString())));
+                if(!mention.context().isEmpty()){
+                    Context context = mention.context().get();
+                    mentionBag.add(tupleFactory.newTupleNoCopy(Arrays.asList(mention.anchorText(),
+                            mention.wikiUrl(),context.left()+context.middle()+context.right())));
+                }
             }
             return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag));
         } catch (InterruptedException e) {
