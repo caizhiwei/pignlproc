@@ -1,0 +1,13 @@
+#Default params for running wikilink.pig
+# input: wikilink files(*.thrift.gz) in a folder
+INPUT=/user/hadoop/wikilink-dataset
+
+OUTPUT_DIR=/user/hadoop/out
+
+PIGNLPROC_JAR=%PIG_PATH/target/pignlproc-0.1.0-SNAPSHOT.jar
+
+# number of reducers
+DEFAULT_PARALLEL=6
+
+
+
