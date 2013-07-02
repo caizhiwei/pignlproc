@@ -31,7 +31,6 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
         TBinaryProtocol fsin;
         Integer key;
         Seq<Mention> value;
-        // to be used for testing
         public WikiLinkRecordReader(FileSplit split, TaskAttemptContext context)
                 throws IOException {
             Path file = split.getPath();
@@ -40,6 +39,8 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
             BufferedInputStream stream = new BufferedInputStream(new GZIPInputStream(fsDataInputStream), 2048);
             fsin = new TBinaryProtocol(new TIOStreamTransport(stream));
         }
+
+        // to be used for testing
         public WikiLinkRecordReader(URL fileURL)
                 throws IOException {
             Path path = new Path("file://", fileURL.getPath());
@@ -88,7 +89,7 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
     }
     @Override
     protected boolean isSplitable(JobContext context, Path filename) {
-        return true;
+        return false;
     }
 
     @Override
