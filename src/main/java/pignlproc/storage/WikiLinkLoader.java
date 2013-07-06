@@ -31,6 +31,8 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
         mentionSchema.add(new Schema.FieldSchema("anchorText", DataType.CHARARRAY));
         mentionSchema.add(new Schema.FieldSchema("wikiUrl", DataType.CHARARRAY));
         mentionSchema.add(new Schema.FieldSchema("context", DataType.CHARARRAY));
+        mentionSchema.add(new Schema.FieldSchema("begin", DataType.INTEGER));
+        mentionSchema.add(new Schema.FieldSchema("end", DataType.INTEGER));
         Schema mentionWrapper = new Schema(new Schema.FieldSchema("t", mentionSchema));
         mentionWrapper.setTwoLevelAccessRequired(true);
         schema.add(new Schema.FieldSchema("mentions", mentionWrapper, DataType.BAG));
@@ -94,8 +96,10 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
                 Mention mention = iter.next();
                 if(!mention.context().isEmpty()){
                     Context context = mention.context().get();
+                    int beg = context.left().length();
+                    int end = beg+context.middle().length();
                     mentionBag.add(tupleFactory.newTupleNoCopy(Arrays.asList(mention.anchorText(),
-                            mention.wikiUrl(),context.left()+context.middle()+context.right())));
+                            mention.wikiUrl(),context.left()+context.middle()+context.right(),beg,end)));
                 }
             }
             return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag));
