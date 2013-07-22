@@ -2,9 +2,17 @@
 # input: wikilink files(*.thrift.gz) in a folder
 INPUT=/user/hadoop/wikilink-dataset
 
-OUTPUT_DIR=/user/hadoop/out
+OUTPUT_TOKEN=/user/hadoop/out_token
+OUTPUT_NE=/user/hadoop/out_ne
 
 PIGNLPROC_JAR=%PIG_PATH/target/pignlproc-0.1.0-SNAPSHOT.jar
+
+STOPLIST_PATH=/data/stopwords.en.list
+STOPLIST_NAME=stopwords.en.list
+
+MIN_COUNT=2
+MIN_CONTEXTS=1
+MAX_NGRAM_LENGTH = 5
 
 # number of reducers
 DEFAULT_PARALLEL=6
