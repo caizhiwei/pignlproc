@@ -31,6 +31,7 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
         TBinaryProtocol fsin;
         Integer key;
         Seq<Mention> value;
+        String html;
         public WikiLinkRecordReader(FileSplit split, TaskAttemptContext context)
                 throws IOException {
             Path file = split.getPath();
@@ -62,6 +63,7 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
                 WikiLinkItem.Immutable item = WikiLinkItem$.MODULE$.decode(fsin);//Get a webpage
                 key = item.docId();
                 value = item.mentions();
+                html = item.content().dom().toString();
                 return true;
             }catch (Exception e){
                 return false;
@@ -78,6 +80,9 @@ public class WikiLinkInputFormat extends FileInputFormat<Integer, Seq<Mention>> 
             return value;
         }
 
+        public String getCurrentHTML() throws IOException, InterruptedException {
+            return html;
+        }
         @Override
         public float getProgress() throws IOException, InterruptedException {
             return 0;

@@ -1,5 +1,7 @@
 package pignlproc.storage;
 
+import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.extractors.DefaultExtractor;
 import edu.umass.cs.iesl.wikilink.expanded.data.Context;
 import edu.umass.cs.iesl.wikilink.expanded.data.Mention;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -36,6 +38,8 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
         Schema mentionWrapper = new Schema(new Schema.FieldSchema("t", mentionSchema));
         mentionWrapper.setTwoLevelAccessRequired(true);
         schema.add(new Schema.FieldSchema("mentions", mentionWrapper, DataType.BAG));
+
+        schema.add(new Schema.FieldSchema("articleText", DataType.CHARARRAY));
 
         return new ResourceSchema(schema);
     }
@@ -102,7 +106,13 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
                             mention.wikiUrl(),context.left()+context.middle()+context.right(),beg,end)));
                 }
             }
-            return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag));
+            String raw = reader.getCurrentHTML();
+            String article = null;
+            try {
+                article = DefaultExtractor.INSTANCE.getText(raw);
+            } catch (Exception e) {
+            }
+            return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag,article));
         } catch (InterruptedException e) {
             throw new IOException(e);
         }
