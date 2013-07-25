@@ -22,8 +22,7 @@ public class TestWikiLinkLoader {
         PigServer pig = new PigServer(LOCAL);
         filename = filename.replace("\\", "\\\\");
         String query = "A = LOAD 'file://" + filename
-                + "' USING pignlproc.storage.WikiLinkLoader() as (id, mentions);";
-        System.out.println(query);
+                + "' USING pignlproc.storage.WikiLinkLoader() as (id, mentions, articleText);";
         pig.registerQuery(query);
         Iterator<Tuple> it = pig.openIterator("A");
         int tupleCount = 0;
@@ -37,6 +36,6 @@ public class TestWikiLinkLoader {
                 }
             }
         }
-        assertEquals(25, tupleCount);
+        assertEquals(20, tupleCount);
     }
 }
