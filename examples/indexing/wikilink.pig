@@ -10,18 +10,19 @@ DEFINE tokens pignlproc.index.GetCountsLucene('$STOPLIST_PATH','$STOPLIST_NAME',
 DEFINE ngramGenerator pignlproc.helpers.RestrictedNGramGenerator('$MAX_NGRAM_LENGTH', '', 'en_US'); -- do not restrict: ''
 
 -- Load Mentions from wiki-link dataset
-idAndMentions = LOAD '$INPUT'
+origin = LOAD '$INPUT'
    USING pignlproc.storage.WikiLinkLoader()
-   AS (id, mentions);
-allMentions = FOREACH idAndMentions 
-   GENERATE FLATTEN(mentions);
-uriContext = FOREACH allMentions
-   GENERATE anchorText as surfaceForm, wikiUrl as uri,context,begin,end;
-
+   AS (docId, mentions, articleText);
+mentions = FOREACH origin
+   GENERATE
+     docId, FLATTEN(mentions);
+articles = FOREACH origin
+   GENERATE
+     docId, articleText;
 
 --Changes for indexing on small cluster
-contexts = FOREACH uriContext GENERATE
-  uri,
+contexts = FOREACH mentions GENERATE
+  wikiUrl as uri,
   context AS paragraph;
 
 -- this is reduce #1
@@ -49,11 +50,16 @@ freq_sorted = FOREACH contexts {
 STORE freq_sorted INTO '$OUTPUT_TOKEN' USING PigStorage('\t');
 
 
-pageNgrams = FOREACH uriContext GENERATE
-    FLATTEN(ngramGenerator(context)) AS ngram,
-    uri as pageUrl;
-doubledLinks = FOREACH uriContext GENERATE
-    surfaceForm,uri;
+pageNgrams = FOREACH articles GENERATE
+    FLATTEN(ngramGenerator(articleText))
+    AS ngram,
+    docId;
+doubledLinks = FOREACH ( JOIN
+    mentions BY (mentions::anchorText, docId) LEFT,
+    pageNgrams BY (ngram, docId) ) GENERATE
+      mentions::anchorText AS surfaceForm,
+      mentions::wikiUrl AS uri;
+
 -- Count
     -- Count pairs
     pairGrp = GROUP doubledLinks BY (surfaceForm, uri);
@@ -98,3 +104,4 @@ sfAndTotalCounts = FOREACH (JOIN
 STORE pairCounts INTO '$OUTPUT_NE/pairCounts';
 STORE uriCounts INTO '$OUTPUT_NE/uriCounts';
 STORE sfAndTotalCounts INTO '$OUTPUT_NE/sfAndTotalCounts';
+
