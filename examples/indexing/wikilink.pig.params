@@ -17,5 +17,5 @@ MAX_NGRAM_LENGTH = 5
 # number of reducers
 DEFAULT_PARALLEL=6
 
-
+MACROS_DIR=%pignlproc/examples/macros
 

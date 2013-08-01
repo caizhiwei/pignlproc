@@ -34,7 +34,7 @@ DEFINE JsonCompressedStorage pignlproc.storage.JsonCompressedStorage();
 IMPORT '$MACROS_DIR/nerd_commons.pig';
 
 -- Get articles (IDs and pairs are not used (and not produced))
-_ids, articles, _pairs = read('$INPUT', '$LANG', $MIN_SURFACE_FORM_LENGTH);
+ids, articles, pairs = readWikipedia('$INPUT', '$LANG', $MIN_SURFACE_FORM_LENGTH);
 
 -- Extract paragraph contexts of the links
 paragraphs = FOREACH articles GENERATE
@@ -47,27 +47,7 @@ contexts = FOREACH paragraphs GENERATE
   targetUri AS uri,
   paragraph AS paragraph;
 
--- this is reduce #1
-by_uri = GROUP contexts by uri;
-
-min_contexts = FILTER by_uri BY (COUNT(contexts) >=$MIN_CONTEXTS);
-
-paragraph_bag = FOREACH min_contexts GENERATE
-	group AS uri,
-	contexts.paragraph AS paragraphs;
-
---TOKENIZE, REMOVE STOPWORDS AND COUNT HERE
-contexts = FOREACH paragraph_bag GENERATE
-	uri, tokens(paragraphs) AS tokens;
-
-freq_sorted = FOREACH contexts {
-	unsorted = tokens.(token, count);
-    filtered = FILTER unsorted BY (count >= $MIN_COUNT);
-	-- sort descending
-	sorted = ORDER filtered BY count desc;
-	GENERATE
-	  uri, sorted;
-}
+freq_sorted = token_count(contexts, $MIN_CONTEXTS, $MIN_COUNT);
 
 STORE freq_sorted INTO '$OUTPUT_DIR' USING PigStorage('\t');
 

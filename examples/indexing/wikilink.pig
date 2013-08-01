@@ -9,83 +9,28 @@ DEFINE resolve pignlproc.helpers.SecondIfNotNullElseFirst();
 DEFINE tokens pignlproc.index.GetCountsLucene('$STOPLIST_PATH','$STOPLIST_NAME','en','EnglishAnalyzer');
 DEFINE ngramGenerator pignlproc.helpers.RestrictedNGramGenerator('$MAX_NGRAM_LENGTH', '', 'en_US'); -- do not restrict: ''
 
+IMPORT '$MACROS_DIR/nerd_commons.pig';
+
 -- Load Mentions from wiki-link dataset
-origin = LOAD '$INPUT'
-   USING pignlproc.storage.WikiLinkLoader()
-   AS (docId, mentions, articleText);
-mentions = FOREACH origin
-   GENERATE
-     docId, FLATTEN(mentions);
-articles = FOREACH origin
-   GENERATE
-     docId, articleText;
+articles, pairs = readWikilink('$INPUT');
 
 --Changes for indexing on small cluster
-contexts = FOREACH mentions GENERATE
-  wikiUrl as uri,
+contexts = FOREACH pairs GENERATE
+  uri,
   context AS paragraph;
 
--- this is reduce #1
-by_uri = GROUP contexts by uri;
-
-min_contexts = FILTER by_uri BY (COUNT(contexts) >=$MIN_CONTEXTS);
-
-paragraph_bag = FOREACH min_contexts GENERATE
-	group AS uri,
-	contexts.paragraph AS paragraphs;
-
---TOKENIZE, REMOVE STOPWORDS AND COUNT HERE
-contexts = FOREACH paragraph_bag GENERATE
-	uri, tokens(paragraphs) AS tokens;
-
-freq_sorted = FOREACH contexts {
-	unsorted = tokens.(token, count);
-    filtered = FILTER unsorted BY (count >= $MIN_COUNT);
-	-- sort descending
-	sorted = ORDER filtered BY count desc;
-	GENERATE
-	  uri, sorted;
-}
+freq_sorted = token_count(contexts, $MIN_CONTEXTS, $MIN_COUNT);
 
 STORE freq_sorted INTO '$OUTPUT_TOKEN' USING PigStorage('\t');
 
+EXEC;
 
-pageNgrams = FOREACH articles GENERATE
-    FLATTEN(ngramGenerator(articleText))
-    AS ngram,
-    docId;
-doubledLinks = FOREACH ( JOIN
-    mentions BY (mentions::anchorText, docId) LEFT,
-    pageNgrams BY (ngram, docId) ) GENERATE
-      mentions::anchorText AS surfaceForm,
-      mentions::wikiUrl AS uri;
+pageNgrams = memoryIntensiveNgrams(articles, pairs, $MAX_NGRAM_LENGTH, '$TEMPORARY_SF_LOCATION', $LOCALE);
+
 
 -- Count
-    -- Count pairs
-    pairGrp = GROUP doubledLinks BY (surfaceForm, uri);
-    pairCounts = FOREACH pairGrp GENERATE
-      FLATTEN($0) AS (pairSf, pairUri),
-      COUNT($1) AS pairCount;
+uriCounts, sfCounts, pairCounts, ngramCounts = count(pairs, pageNgrams);
 
-    -- Count surface forms
-    sfGrp = GROUP doubledLinks BY surfaceForm;
-    sfCounts = FOREACH sfGrp GENERATE
-      $0 AS surfaceForm,
-      COUNT($1) AS sfCount;
-
-    -- Count URIs
-    uriGrp = GROUP doubledLinks BY uri;
-    uriCounts = FOREACH uriGrp GENERATE
-      $0 AS uri,
-      COUNT($1) AS uriCount;
-
-    -- Count Ngrams
-    ngrams = FOREACH pageNgrams GENERATE
-      ngram;
-    ngramGrp = GROUP ngrams BY ngram;
-    ngramCounts = FOREACH ngramGrp GENERATE
-      $0 as ngram,
-      COUNT($1) AS ngramCount;
 
 --------------------
 -- join some results
@@ -104,4 +49,3 @@ sfAndTotalCounts = FOREACH (JOIN
 STORE pairCounts INTO '$OUTPUT_NE/pairCounts';
 STORE uriCounts INTO '$OUTPUT_NE/uriCounts';
 STORE sfAndTotalCounts INTO '$OUTPUT_NE/sfAndTotalCounts';
-

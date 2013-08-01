@@ -1,5 +1,5 @@
 
-DEFINE read(WIKIPEDIA_DUMP, LANG, MIN_SURFACE_FORM_LENGTH) RETURNS ids, articles, pairs {
+DEFINE readWikipedia(WIKIPEDIA_DUMP, LANG, MIN_SURFACE_FORM_LENGTH) RETURNS ids, articles, pairs {
     -- parse Wikipedia into IDs, article texts and link pairs
 
     DEFINE resolve pignlproc.helpers.SecondIfNotNullElseFirst();
@@ -62,6 +62,20 @@ DEFINE read(WIKIPEDIA_DUMP, LANG, MIN_SURFACE_FORM_LENGTH) RETURNS ids, articles
     $pairs = UNION ONSCHEMA
       pairsFromRedirects,
       distinctLinks;
+};
+DEFINE readWikilink(Wikilink_Dir) RETURNS articles, pairs {
+    -- parse Wikipedia into IDs, article texts and link pairs
+
+    origin = LOAD '$Wikilink_Dir'
+       USING pignlproc.storage.WikiLinkLoader()
+       AS (docId, mention, articleText);
+    mentions = FOREACH origin GENERATE
+       docId, FLATTEN(mention);
+    $articles = FOREACH origin GENERATE
+       docId AS pageUrl, articleText AS text;
+    $pairs = FOREACH mentions GENERATE
+       anchorText AS surfaceForm, docId AS pageUrl, wikiUrl AS uri, context;
+
 };
 
 DEFINE getLinks(articles, LANG, MIN_SURFACE_FORM_LENGTH) RETURNS pageLinksNonEmptySf {
@@ -140,12 +154,34 @@ DEFINE memoryIntensiveNgrams(articles, pairs, MAX_NGRAM_LENGTH, TEMPORARY_SF_LOC
 
     DEFINE ngramGenerator pignlproc.helpers.RestrictedNGramGenerator('$MAX_NGRAM_LENGTH', '$TEMPORARY_SF_LOCATION/surfaceForms', '$LOCALE');
 
-    EXEC;
-
     -- filter to only include ngrams that are also surface forms while generating ngrams
     $pageNgrams = FOREACH $articles GENERATE
       FLATTEN( ngramGenerator(text) ) AS ngram,
       pageUrl PARALLEL 40;
+};
+
+DEFINE token_count(contexts, MIN_CONTEXTS, MIN_COUNT) RETURNS freq_sorted {
+    -- this is reduce #1
+    by_uri = GROUP contexts by uri;
+
+    min_contexts = FILTER by_uri BY (COUNT(contexts) >=$MIN_CONTEXTS);
+
+    paragraph_bag = FOREACH min_contexts GENERATE
+    	group AS uri,
+    	contexts.paragraph AS paragraphs;
+
+    --TOKENIZE, REMOVE STOPWORDS AND COUNT HERE
+    contexts = FOREACH paragraph_bag GENERATE
+    	uri, tokens(paragraphs) AS tokens;
+
+    $freq_sorted = FOREACH contexts {
+    	unsorted = tokens.(token, count);
+        filtered = FILTER unsorted BY (count >= $MIN_COUNT);
+    	-- sort descending
+    	sorted = ORDER filtered BY count desc;
+    	GENERATE
+    	  uri, sorted;
+    }
 };
 
 DEFINE count(pairs, pageNgrams) RETURNS uriCounts, sfCounts, pairCounts, ngramCounts {

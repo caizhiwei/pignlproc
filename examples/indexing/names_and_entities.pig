@@ -9,14 +9,14 @@
 
 SET job.name 'DBpedia Spotlight: Names and entities for $LANG'
 
-%default DEFAULT PARELLEL 20
+
 SET default_parallel $DEFAULT_PARALLEL
 
 -- enable compression of intermediate results
 SET pig.tmpfilecompression true;
 SET pig.tmpfilecompression.codec gz;
 
-SET io.sort.mb 1024
+-- SET io.sort.mb 1024
 
 REGISTER $PIGNLPROC_JAR
 DEFINE dbpediaEncode pignlproc.evaluation.DBpediaUriEncode('$LANG'); -- URI encoding
@@ -29,10 +29,10 @@ DEFINE default pignlproc.helpers.SecondIfNotNullElseFirst(); -- default values
 IMPORT '$MACROS_DIR/nerd_commons.pig';
 
 -- Get surfaceForm-URI pairs
-ids, articles, pairs = read('$INPUT', '$LANG', $MIN_SURFACE_FORM_LENGTH);
+ids, articles, pairs = readWikipedia('$INPUT', '$LANG', $MIN_SURFACE_FORM_LENGTH);
 
 -- Make ngrams
-pageNgrams = diskIntensiveNgrams(articles, $MAX_NGRAM_LENGTH);
+pageNgrams = diskIntensiveNgrams(articles, $MAX_NGRAM_LENGTH, $LOCALE);
 --pageNgrams = memoryIntensiveNgrams(articles, pairs, $MAX_NGRAM_LENGTH, $TEMPORARY_SF_LOCATION, $LOCALE);
 
 -- Count
