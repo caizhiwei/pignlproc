@@ -21,11 +21,13 @@ contexts = FOREACH pairs GENERATE
 
 freq_sorted = token_count(contexts, $MIN_CONTEXTS, $MIN_COUNT);
 
-STORE freq_sorted INTO '$OUTPUT_TOKEN' USING PigStorage('\t');
+STORE freq_sorted INTO '$OUTPUT' USING PigStorage('\t');
 
 EXEC;
 
-pageNgrams = memoryIntensiveNgrams(articles, pairs, $MAX_NGRAM_LENGTH, '$TEMPORARY_SF_LOCATION', $LOCALE);
+storeSurfaceForm(pairs,'$TEMPORARY_SF_LOCATION');
+EXEC;
+pageNgrams = memoryIntensiveNgrams(articles, $MAX_NGRAM_LENGTH, '$TEMPORARY_SF_LOCATION', $LOCALE);
 
 
 -- Count
@@ -46,6 +48,6 @@ sfAndTotalCounts = FOREACH (JOIN
 -- Output
 --------------------
 
-STORE pairCounts INTO '$OUTPUT_NE/pairCounts';
-STORE uriCounts INTO '$OUTPUT_NE/uriCounts';
-STORE sfAndTotalCounts INTO '$OUTPUT_NE/sfAndTotalCounts';
+STORE pairCounts INTO '$OUTPUT/pairCounts';
+STORE uriCounts INTO '$OUTPUT/uriCounts';
+STORE sfAndTotalCounts INTO '$OUTPUT/sfAndTotalCounts';

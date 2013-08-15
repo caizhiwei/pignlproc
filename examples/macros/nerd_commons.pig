@@ -145,12 +145,16 @@ DEFINE diskIntensiveNgrams(articles, MAX_NGRAM_LENGTH, LOCALE) RETURNS pageNgram
       pageUrl;
 };
 
-DEFINE memoryIntensiveNgrams(articles, pairs, MAX_NGRAM_LENGTH, TEMPORARY_SF_LOCATION, LOCALE) RETURNS pageNgrams {
-    -- create ngrams that also are surface forms in the pairs bag
+DEFINE storeSurfaceForm(pairs,TEMPORARY_SF_LOCATION) RETURNS VOID{
+    -- store surface form for temporary loop up
 
     allSurfaceForms = FOREACH pairs GENERATE
       surfaceForm;
     STORE allSurfaceForms INTO '$TEMPORARY_SF_LOCATION/surfaceForms';
+
+};
+DEFINE memoryIntensiveNgrams(articles,  MAX_NGRAM_LENGTH, TEMPORARY_SF_LOCATION, LOCALE) RETURNS pageNgrams {
+    -- create ngrams that also are surface forms in the pairs bag
 
     DEFINE ngramGenerator pignlproc.helpers.RestrictedNGramGenerator('$MAX_NGRAM_LENGTH', '$TEMPORARY_SF_LOCATION/surfaceForms', '$LOCALE');
 
