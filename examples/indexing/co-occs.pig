@@ -63,4 +63,4 @@ describe JSONAdjLists;
 
 -- Write out
 -- Consider use JSONStorage
-STORE JSONAdjLists INTO '$OUTPUT_DIR/co-occs' USING PigStorage();
+STORE JSONAdjLists INTO '$OUTPUT_DIR/co-occs-count' USING PigStorage();

@@ -24,6 +24,8 @@ SET pig.tmpfilecompression.codec gz
 -- Register the project jar to use the custom loaders and UDFs
 REGISTER $PIGNLPROC_JAR;
 
+%default minCount 3
+
 -- Define alias for tokenizer function
 DEFINE tokens pignlproc.index.GetCountsLucene('$STOPLIST_PATH','$STOPLIST_NAME','$LANG','$ANALYZER_NAME');
 
@@ -45,4 +47,23 @@ occs = FOREACH articles GENERATE
 occs = FOREACH occs GENERATE
   ExtractLinkSF(pageUrl) AS src,
   ExtractLinkSF(links::target) AS tar;
+
+-- Store occurrence pairs
 STORE occs INTO '$OUTPUT_DIR/occs' USING PigStorage('\t');
+
+-- GET occurrence counts
+groupedOccs = group occs BY (src,tar);
+cnt = Foreach groupedOccs GENERATE group.src AS src,group.tar AS tar,COUNT(occs) AS count;
+reducedCnt = FILTER cnt BY count>=$minCount;
+
+-- Group into a ajancency list
+adjLists = GROUP reducedCnt BY src;
+
+-- Format to a JSON like format
+JSONAdjLists = FOREACH adjLists GENERATE group AS src,reducedCnt.(tar,count) AS counts;
+
+describe JSONAdjLists;
+
+-- Write out
+-- Consider use JSONStorage
+STORE JSONAdjLists INTO '$OUTPUT_DIR/occs-count' USING PigStorage();
