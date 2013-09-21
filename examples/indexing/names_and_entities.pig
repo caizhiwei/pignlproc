@@ -32,8 +32,9 @@ IMPORT '$MACROS_DIR/nerd_commons.pig';
 ids, articles, pairs = readWikipedia('$INPUT', '$LANG', $MIN_SURFACE_FORM_LENGTH);
 
 -- Make ngrams
-pageNgrams = diskIntensiveNgrams(articles, $MAX_NGRAM_LENGTH, $LOCALE);
---pageNgrams = memoryIntensiveNgrams(articles, pairs, $MAX_NGRAM_LENGTH, $TEMPORARY_SF_LOCATION, $LOCALE);
+storeSurfaceForm(pairs,'$TEMPORARY_SF_LOCATION');
+EXEC;
+pageNgrams = memoryIntensiveNgrams(articles, $MAX_NGRAM_LENGTH, '$TEMPORARY_SF_LOCATION', $LOCALE);
 
 -- Count
 uriCounts, sfCounts, pairCounts, ngramCounts = count(pairs, pageNgrams);
