@@ -11,19 +11,9 @@ DEFINE ngramGenerator pignlproc.helpers.RestrictedNGramGenerator('$MAX_NGRAM_LEN
 
 IMPORT '$MACROS_DIR/nerd_commons.pig';
 
+
 -- Load Mentions from wiki-link dataset
 articles, pairs = readWikilink('$INPUT');
-
---Changes for indexing on small cluster
-contexts = FOREACH pairs GENERATE
-  uri,
-  context AS paragraph;
-
-freq_sorted = token_count(contexts, $MIN_CONTEXTS, $MIN_COUNT);
-
-STORE freq_sorted INTO '$OUTPUT' USING PigStorage('\t');
-
-EXEC;
 
 storeSurfaceForm(pairs,'$TEMPORARY_SF_LOCATION');
 EXEC;

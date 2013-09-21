@@ -67,7 +67,7 @@ DEFINE readWikilink(Wikilink_Dir) RETURNS articles, pairs {
     -- parse Wikipedia into IDs, article texts and link pairs
 
     origin = LOAD '$Wikilink_Dir'
-       USING pignlproc.storage.WikiLinkLoader()
+       USING pignlproc.storage.WikiLinkFullLoader()
        AS (docId, mention, articleText);
     mentions = FOREACH origin GENERATE
        docId, FLATTEN(mention);

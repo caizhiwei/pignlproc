@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 /**
  * @author Zhiwei
+ * Load wikilink data set without full html pages
  */
 public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
 
@@ -38,8 +39,6 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
         Schema mentionWrapper = new Schema(new Schema.FieldSchema("t", mentionSchema));
         mentionWrapper.setTwoLevelAccessRequired(true);
         schema.add(new Schema.FieldSchema("mentions", mentionWrapper, DataType.BAG));
-
-        schema.add(new Schema.FieldSchema("articleText", DataType.CHARARRAY));
 
         return new ResourceSchema(schema);
     }
@@ -106,13 +105,7 @@ public class WikiLinkLoader extends LoadFunc implements LoadMetadata {
                             mention.wikiUrl(),context.left()+context.middle()+context.right(),beg,end)));
                 }
             }
-            String raw = reader.getCurrentHTML();
-            String article = null;
-            try {
-                article = DefaultExtractor.INSTANCE.getText(raw);
-            } catch (Exception e) {
-            }
-            return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag,article));
+            return tupleFactory.newTupleNoCopy(Arrays.asList(docId,mentionBag));
         } catch (InterruptedException e) {
             throw new IOException(e);
         }
