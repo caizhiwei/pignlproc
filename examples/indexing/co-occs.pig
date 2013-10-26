@@ -16,6 +16,10 @@
 SET job.name 'DBpedia Spotlight: Token counts per URI for $LANG'
 
 %default DEFAULT_PARALLEL 20
+%default inFile $OUTPUT_DIR/occs
+%default useDocLevel false
+%default minCount 3
+
 SET default_parallel $DEFAULT_PARALLEL
 
 SET pig.tmpfilecompression true
@@ -34,15 +38,19 @@ DEFINE JsonCompressedStorage pignlproc.storage.JsonCompressedStorage();
 
 IMPORT '$MACROS_DIR/nerd_commons.pig';
 
-%default inFile $OUTPUT_DIR/occs
-%default useDocLevel false
-%default minCount 3
 
 -- Go through all the occurrences in the TSV file
 occs = LOAD '$inFile' USING PigStorage('\t') AS (src:chararray,tar:chararray);
 
+coOccsById = GROUP occs BY src;
+
+-- Flatten by itself to produce cross product for the list of uri
+entityPairs = FOREACH coOccsById generate
+   flatten(occs.tar) AS (src) ,
+   flatten(occs.tar) AS (tar) ;
+
 -- Self co-occurrences are not desired
-cleanedPairs = FILTER occs BY src!= tar;
+cleanedPairs = FILTER entityPairs BY src!= tar;
 
 --Group by entity co-occured pair
 groupedPairs = GROUP cleanedPairs BY (src,tar);
